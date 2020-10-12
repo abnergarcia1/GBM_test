@@ -226,3 +226,59 @@ func TestInvestmentService_Order_ClosedMarket(t *testing.T){
 		assert.Equal(t, "Closed Market", err.Error(), "Market is closed, you cannot make any operation")
 	}
 }
+
+func TestInvestmentService_BuySingleOrder_CorrectResponse(t *testing.T){
+	setEnv()
+
+	investmentService.DB = &data.MemDB{}
+	newAccount:=models.Account{
+		Cash: 1000,
+	}
+	resAccount, _:= investmentService.CreateAccount(newAccount)
+
+	newOrder:=models.Order{
+		TimeStamp: time.Now().Unix(),
+		Operation: "BUY",
+		IssuerName: "AAPL",
+		TotalShares: 3,
+		SharePrice: 50,
+	}
+
+	newOrder.AccountID=resAccount.ID
+	response, _:=investmentService.BuySellOrder(newOrder)
+
+	assert.Equal(t, response.CurrentBalance.Cash,newAccount.Cash - (newOrder.TotalShares*newOrder.SharePrice), "The account cash is wrong")
+	assert.Equal(t, response.CurrentBalance.Issuers[0].TotalShares, newOrder.TotalShares, "Total Shares amount is wrong")
+	assert.Equal(t, response.CurrentBalance.Issuers[0].IssuerName, newOrder.IssuerName, "Issuer name don't match")
+	assert.Equal(t, response.CurrentBalance.Issuers[0].SharePrice, newOrder.SharePrice, "Share price don't match")
+}
+
+func TestInvestmentService_SellSingleOrder_CorrectResponse(t *testing.T){
+	setEnv()
+
+	investmentService.DB = &data.MemDB{}
+	newAccount:=models.Account{
+		Cash: 1000,
+	}
+	resAccount, _:= investmentService.CreateAccount(newAccount)
+
+	newOrder:=models.Order{
+		TimeStamp: time.Now().Unix(),
+		Operation: "BUY",
+		IssuerName: "AAPL",
+		TotalShares: 3,
+		SharePrice: 50,
+	}
+	newOrder.AccountID=resAccount.ID
+	_, _=investmentService.BuySellOrder(newOrder)
+
+	newOrder.Operation="SELL"
+	newOrder.TotalShares=2
+
+	response, _:=investmentService.BuySellOrder(newOrder)
+
+	assert.Equal(t, response.CurrentBalance.Cash,newAccount.Cash - 50, "The account cash is wrong")
+	assert.Equal(t, response.CurrentBalance.Issuers[0].TotalShares, int64(1), "Total Shares amount is wrong")
+	assert.Equal(t, response.CurrentBalance.Issuers[0].IssuerName, newOrder.IssuerName, "Issuer name don't match")
+	assert.Equal(t, response.CurrentBalance.Issuers[0].SharePrice, newOrder.SharePrice, "Share price don't match")
+}
