@@ -55,6 +55,7 @@ func (s *InvestmentService) BuySellOrder(order models.Order)(response models.Ord
 
 
 	//check if the operation is duplicated using 5 minutes tolerance
+
 	err=operations.VerifyDuplicate(order)
 	if err!=nil{
 		response.BusinessErrors=[]string{err.Error()}
@@ -108,9 +109,6 @@ func (s *InvestmentService) BuySellOrder(order models.Order)(response models.Ord
 	defer s.DB.Disconnect()
 	err=s.DB.Query(nil, query,order.TotalShares * order.SharePrice, account.ID)
 
-	//fmt.Println("investmentService val: ", retAccount)
-
-
 	operations.AddOperation(order)
 
 	account, err=s.GetAccountDetails(account.ID)
@@ -147,7 +145,7 @@ func(s *InvestmentService) HasEnoughStocks(account models.Account, order models.
 		}
 	}
 
-	return errors.New("No Issuer Name was found")
+	return errors.New("No Issuer Name was found in Account")
 }
 
 func(s *InvestmentService) IsOpenMarket()(err error){
@@ -189,6 +187,7 @@ func(s *InvestmentService) GetAccountDetails(id int64)(account models.Account, e
 	}
 
 	account.Issuers=accountIssuers
+	account.ID=0
 
 	return
 }

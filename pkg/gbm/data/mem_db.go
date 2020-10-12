@@ -47,37 +47,45 @@ func(m *MemDB) Query (model interface{}, query string, args ...interface{}) (err
 		parseModel := model.(*models.Account)
 		acctID:=args[0].(int64)
 
+		m.mux.Lock()
 		for _, acct:=range m.accountsTable{
-
 			if acct.ID==acctID{
 				*parseModel=acct
-				return
+				break
 			}
 		}
-
+		m.mux.Unlock()
+		return
 
 	case "UPDATE accounts SET Cash=Cash - ? WHERE Id = ?":
 		cash:=args[0].(int64)
 		acctID:=args[1].(int64)
 
+		m.mux.Lock()
 		for i, acct:=range m.accountsTable{
 			if acct.ID==acctID{
 				m.accountsTable[i].Cash=acct.Cash-cash
 				fmt.Println("acct buy info: ",acct)
-				return
+				break
 			}
 		}
+		m.mux.Unlock()
+		return
 
 	case "UPDATE accounts SET Cash=Cash + ? WHERE Id = ?":
 		cash:=args[0].(int64)
 		acctID:=args[1].(int64)
 
-		for _, acct:=range m.accountsTable{
+		m.mux.Lock()
+		for i, acct:=range m.accountsTable{
 			if acct.ID==acctID{
-				acct.Cash=acct.Cash+cash
-				return
+				m.accountsTable[i].Cash=acct.Cash+cash
+				fmt.Println("acct buy info: ",acct)
+				break
 			}
 		}
+		m.mux.Unlock()
+		return
 	}
 
 	fmt.Println("accounts table: ",m.accountsTable)
