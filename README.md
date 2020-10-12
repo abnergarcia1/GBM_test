@@ -11,4 +11,4 @@ run                           Run the current go project
 test                          Run all the test in the project
 ```
 
-### You need to run the project and after that, access to http://localhost:8000/webclient/ in order to access to the page to view contacts, word counter and dupes email
+### the service endpoints are in  http://localhost:8085/accounts 
