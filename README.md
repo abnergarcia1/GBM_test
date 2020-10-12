@@ -3,6 +3,7 @@ This project is for GMB
 
 ## Usage
 
+You need to install go language version 1.14 https://golang.org/
 
 There is a Makefile provided for your convenience — just run `make [command]` to get started.
 ```
