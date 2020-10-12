@@ -1,15 +1,14 @@
 package gbm
 
 import (
-	"fmt"
-	"github.com/abnergarcia1/GBM_test/pkg/gbm/services"
 	"github.com/abnergarcia1/GBM_test/pkg/gbm/models"
+	"github.com/abnergarcia1/GBM_test/pkg/gbm/services"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
 )
 
-var operations  = models.StockOperationsQueue{}
+
 
 type APIHandlers struct{
 	investmentService services.InvestmentService
@@ -17,13 +16,24 @@ type APIHandlers struct{
 
 func (h *APIHandlers) CreateAccount(c *gin.Context){
 
+	account:=models.Account{}
+
+	if err := c.ShouldBindJSON(&account); err != nil {
+		c.JSON(http.StatusUnprocessableEntity, "Invalid json provided")
+		return
+	}
+
+	retacct, err:=h.investmentService.CreateAccount(account)
+	if err!=nil{
+		c.String(http.StatusBadRequest, err.Error())
+	}
+
+	c.JSON(http.StatusOK, retacct)
 
 }
 
 func (h *APIHandlers) BuySellOrder(c *gin.Context){
 	id:=c.Param("id")
-
-	message:="user id is " + id
 
 	order:=models.Order{}
 
@@ -33,14 +43,13 @@ func (h *APIHandlers) BuySellOrder(c *gin.Context){
 	}
 
 	order.AccountID,_=strconv.ParseInt(id,10,64)
-	err:=operations.VerifyDuplicate(order)
+
+	orderResponse, err:=h.investmentService.BuySellOrder(order)
 	if err!=nil{
 		c.String(http.StatusBadRequest, err.Error())
 		return
 	}
 
-	fmt.Println(operations.Operations)
-
-	c.String(http.StatusOK,message)
+	c.JSON(http.StatusOK,orderResponse)
 
 }

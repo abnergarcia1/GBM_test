@@ -47,12 +47,14 @@ func(q *StockOperationsQueue) VerifyDuplicate(order Order) (err error){
 			}
 		}
 
-		q.AddOperation(order)
+		//q.AddOperation(order)
 
 	return
 }
 
 func (q *StockOperationsQueue) AddOperation(order Order){
+	q.mux.Lock()
+	defer q.mux.Unlock()
 
 	operation:=StockOperation{
 		ID:order.AccountID,
