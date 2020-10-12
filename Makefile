@@ -16,10 +16,6 @@ build: ## build the current go project
 run: ## run the current go project
 	cd ./cmd/gbm && go run -v main.go && cd ../..
 
-.PHONY: create_docker_local
-create_docker_local:  ## Build docker images for deploy
-	docker build -t jaca-restapi -f Dockerfile .
-
 
 .PHONY: help
 help:
