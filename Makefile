@@ -1,14 +1,12 @@
 SHELL := /bin/bash
-##IMPORT_CONTAINER=voxie/engineering-test:incoming
 GO111MODULE := on
 
 .PHONY: all
 all: help
 
-.PHONY: redis
-import: ## Run redis cointainer
-	@echo "+ $@"
-	@docker run -p 6379:6379 --name jaca-core-redis -d redis
+.PHONY: test
+test: ## Run unittests
+	@go test  ./... -v
 
 .PHONY: build
 build: ## build the current go project

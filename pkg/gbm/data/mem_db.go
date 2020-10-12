@@ -1,7 +1,6 @@
 package data
 
 import (
-	"fmt"
 	"github.com/abnergarcia1/GBM_test/pkg/gbm/models"
 	"math/rand"
 	"sync"
@@ -67,7 +66,6 @@ func(m *MemDB) Query (model interface{}, query string, args ...interface{}) (err
 		for i, acct:=range m.accountsTable{
 			if acct.ID==acctID{
 				m.accountsTable[i].Cash=acct.Cash-cash
-				fmt.Println("acct buy info: ",acct)
 				break
 			}
 		}
@@ -81,7 +79,6 @@ func(m *MemDB) Query (model interface{}, query string, args ...interface{}) (err
 		for i, acct:=range m.accountsTable{
 			if acct.ID==acctID{
 				m.accountsTable[i].Cash=acct.Cash+cash
-				fmt.Println("acct buy info: ",acct)
 				break
 			}
 		}

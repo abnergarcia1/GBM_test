@@ -2,10 +2,11 @@ package services
 
 import (
 	"errors"
-	"fmt"
 	"github.com/abnergarcia1/GBM_test/pkg/gbm/data"
 	"github.com/abnergarcia1/GBM_test/pkg/gbm/models"
+	"strconv"
 	"time"
+	"os"
 )
 
 type InvestmentService struct{
@@ -39,8 +40,6 @@ func (s *InvestmentService) BuySellOrder(order models.Order)(response models.Ord
 		response.BusinessErrors=[]string{err.Error()}
 		return
 	}
-
-	fmt.Println(account)
 
 	response.BusinessErrors=[]string{}
 	response.CurrentBalance=account
@@ -151,8 +150,8 @@ func(s *InvestmentService) HasEnoughStocks(account models.Account, order models.
 }
 
 func(s *InvestmentService) IsOpenMarket()(err error){
-	openTime:=6
-	closeTime:=15
+	openTime,_:=strconv.Atoi(os.Getenv("OpenMarketHour"))
+	closeTime,_:=strconv.Atoi(os.Getenv("ClosedMarketHour"))
 	hours, _,_:=time.Now().Clock()
 
 	if hours<openTime || hours > closeTime{
