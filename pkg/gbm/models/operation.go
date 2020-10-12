@@ -47,8 +47,6 @@ func(q *StockOperationsQueue) VerifyDuplicate(order Order) (err error){
 			}
 		}
 
-		//q.AddOperation(order)
-
 	return
 }
 

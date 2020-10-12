@@ -24,6 +24,7 @@ func (s *InvestmentService) CreateAccount(account models.Account)(retAccount mod
 	}()
 
 	err=s.DB.Query(&retAccount, "INSERT INTO accounts(Cash) VALUES (?)",account.Cash)
+	retAccount.Issuers=[]models.Order{}
 
 	fmt.Println("investmentService val: ", retAccount)
 	return
@@ -32,6 +33,18 @@ func (s *InvestmentService) CreateAccount(account models.Account)(retAccount mod
 
 func (s *InvestmentService) BuySellOrder(order models.Order)(response models.OrderResponse, err error){
 	response = models.OrderResponse{}
+	query:=""
+
+	account, err:=s.GetAccountDetails(order.AccountID)
+	if err!=nil{
+		response.BusinessErrors=[]string{err.Error()}
+		return
+	}
+
+	response.BusinessErrors=[]string{}
+	response.CurrentBalance=account
+	response.CurrentBalance.ID=0
+	response.CurrentBalance.Issuers=[]models.Order{}
 
 	//check if the market is open
 	err=s.IsOpenMarket()
@@ -40,35 +53,15 @@ func (s *InvestmentService) BuySellOrder(order models.Order)(response models.Ord
 		return
 	}
 
-	account:=models.Account{}
-	var accountIssuers []models.Order
-
-	if err = s.DB.Connect(); err != nil {
-		response.BusinessErrors=[]string{err.Error()}
-		return
-	}
-	defer s.DB.Disconnect()
 
 	//check if the operation is duplicated using 5 minutes tolerance
 	err=operations.VerifyDuplicate(order)
-
-	//Gets account main info
-	err = s.DB.Query(&account, "SELECT Id, Cash FROM accounts WHERE Id=?", order.AccountID)
 	if err!=nil{
 		response.BusinessErrors=[]string{err.Error()}
 		return
 	}
 
-	//gets issuers to this account
-	err = s.DB.Query(&accountIssuers, "SELECT IssuerName, TotalShares, SharePrice FROM orders WHERE AccountId=?", order.AccountID)
-	if err!=nil{
-		response.BusinessErrors=[]string{err.Error()}
-		return
-	}
-
-	account.Issuers=accountIssuers
-
-	query:=""
+	//TODO: this can be replaced with transaction functions to ensure data integrity in db
 	switch order.Operation{
 	case "BUY":
 		//check if the account has the enough balance
@@ -80,6 +73,12 @@ func (s *InvestmentService) BuySellOrder(order models.Order)(response models.Ord
 
 		query="UPDATE accounts SET Cash=Cash - ? WHERE Id = ?"
 
+		err=s.BuyShares(order)
+		if err!=nil{
+			response.BusinessErrors=[]string{err.Error()}
+			return
+		}
+
 	case "SELL":
 		//check if the account has enough stocks for issuer
 		err=s.HasEnoughStocks(account, order)
@@ -90,14 +89,37 @@ func (s *InvestmentService) BuySellOrder(order models.Order)(response models.Ord
 
 		query="UPDATE accounts SET Cash=Cash + ? WHERE Id = ?"
 
+		err=s.SellShares(order)
+		if err!=nil{
+			response.BusinessErrors=[]string{err.Error()}
+			return
+		}
+
+	default:
+		err=errors.New("Invalid Operation Type")
+		response.BusinessErrors=[]string{err.Error()}
+		return
 	}
 
-	err=s.DB.Query(&account, query,account.Cash)
+	if err = s.DB.Connect(); err != nil {
+		response.BusinessErrors=[]string{err.Error()}
+		return
+	}
+	defer s.DB.Disconnect()
+	err=s.DB.Query(nil, query,order.TotalShares * order.SharePrice, account.ID)
 
 	//fmt.Println("investmentService val: ", retAccount)
 
 
 	operations.AddOperation(order)
+
+	account, err=s.GetAccountDetails(account.ID)
+	if err!=nil{
+		response.BusinessErrors=[]string{err.Error()}
+		return
+	}
+
+	response.CurrentBalance=account
 
 	return
 
@@ -130,7 +152,7 @@ func(s *InvestmentService) HasEnoughStocks(account models.Account, order models.
 
 func(s *InvestmentService) IsOpenMarket()(err error){
 	openTime:=6
-	closeTime:=15
+	closeTime:=22
 	hours, _,_:=time.Now().Clock()
 
 	if hours<openTime || hours > closeTime{
@@ -138,3 +160,46 @@ func(s *InvestmentService) IsOpenMarket()(err error){
 	}
 	return
 }
+
+func(s *InvestmentService) GetAccountDetails(id int64)(account models.Account, err error){
+	account=models.Account{}
+	account.Issuers=[]models.Order{}
+	var accountIssuers []models.Order
+
+	if err = s.DB.Connect(); err != nil {
+		return
+	}
+	defer s.DB.Disconnect()
+
+	//Gets account main info
+	err = s.DB.Query(&account, "SELECT Id, Cash FROM accounts WHERE Id=?", id)
+	if err!=nil{
+		return
+	}
+
+	if account.ID==0{
+		err=errors.New("Account not found")
+		return
+	}
+
+	//gets issuers to this account
+	err = s.DB.Query(&accountIssuers, "SELECT IssuerName, TotalShares, SharePrice FROM orders WHERE AccountId=?", id)
+	if err!=nil{
+		return
+	}
+
+	account.Issuers=accountIssuers
+
+	return
+}
+
+func(s *InvestmentService) BuyShares(order models.Order)(err error){
+
+	return
+}
+
+func(s *InvestmentService) SellShares(order models.Order)(err error){
+
+	return
+}
+

@@ -44,11 +44,8 @@ func (h *APIHandlers) BuySellOrder(c *gin.Context){
 
 	order.AccountID,_=strconv.ParseInt(id,10,64)
 
-	orderResponse, err:=h.investmentService.BuySellOrder(order)
-	if err!=nil{
-		c.String(http.StatusBadRequest, err.Error())
-		return
-	}
+	orderResponse, _:=h.investmentService.BuySellOrder(order)
+
 
 	c.JSON(http.StatusOK,orderResponse)
 

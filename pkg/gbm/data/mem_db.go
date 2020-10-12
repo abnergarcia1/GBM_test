@@ -3,8 +3,8 @@ package data
 import (
 	"fmt"
 	"github.com/abnergarcia1/GBM_test/pkg/gbm/models"
-	"sync"
 	"math/rand"
+	"sync"
 )
 
 type MemDB struct {
@@ -33,18 +33,55 @@ func(m *MemDB) Query (model interface{}, query string, args ...interface{}) (err
 
 	case "SELECT IssuerName, TotalShares, SharePrice FROM orders WHERE AccountId=?":
 		parseOrders := model.(*[]models.Order)
+		*parseOrders=[]models.Order{}
 
+		m.mux.Lock()
 		for _, elem:=range m.ordersTable{
 			if elem.AccountID == args[0].(int64){
 				*parseOrders = append(*parseOrders, elem)
 			}
 		}
+		m.mux.Unlock()
+
+	case "SELECT Id, Cash FROM accounts WHERE Id=?":
+		parseModel := model.(*models.Account)
+		acctID:=args[0].(int64)
+
+		for _, acct:=range m.accountsTable{
+
+			if acct.ID==acctID{
+				*parseModel=acct
+				return
+			}
+		}
 
 
+	case "UPDATE accounts SET Cash=Cash - ? WHERE Id = ?":
+		cash:=args[0].(int64)
+		acctID:=args[1].(int64)
+
+		for i, acct:=range m.accountsTable{
+			if acct.ID==acctID{
+				m.accountsTable[i].Cash=acct.Cash-cash
+				fmt.Println("acct buy info: ",acct)
+				return
+			}
+		}
+
+	case "UPDATE accounts SET Cash=Cash + ? WHERE Id = ?":
+		cash:=args[0].(int64)
+		acctID:=args[1].(int64)
+
+		for _, acct:=range m.accountsTable{
+			if acct.ID==acctID{
+				acct.Cash=acct.Cash+cash
+				return
+			}
+		}
 	}
 
-	fmt.Println("the accounts table is :",m.accountsTable)
-
+	fmt.Println("accounts table: ",m.accountsTable)
+	fmt.Println("orders table: ", m.ordersTable)
 	return
 }
 

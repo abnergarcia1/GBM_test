@@ -10,7 +10,7 @@ type Order struct{
 }
 
 type OrderResponse struct{
-	CurrentBalance Balance `json:"current_balance"`
+	CurrentBalance Account `json:"current_balance"`
 	BusinessErrors []string `json:"business_errors"`
 
 }
