@@ -26,7 +26,6 @@ func (s *InvestmentService) CreateAccount(account models.Account)(retAccount mod
 	err=s.DB.Query(&retAccount, "INSERT INTO accounts(Cash) VALUES (?)",account.Cash)
 	retAccount.Issuers=[]models.Order{}
 
-	fmt.Println("investmentService val: ", retAccount)
 	return
 
 }
@@ -41,9 +40,11 @@ func (s *InvestmentService) BuySellOrder(order models.Order)(response models.Ord
 		return
 	}
 
+	fmt.Println(account)
+
 	response.BusinessErrors=[]string{}
 	response.CurrentBalance=account
-	response.CurrentBalance.ID=0
+
 	response.CurrentBalance.Issuers=[]models.Order{}
 
 	//check if the market is open
@@ -118,6 +119,7 @@ func (s *InvestmentService) BuySellOrder(order models.Order)(response models.Ord
 	}
 
 	response.CurrentBalance=account
+	response.CurrentBalance.ID=0
 
 	return
 
@@ -150,7 +152,7 @@ func(s *InvestmentService) HasEnoughStocks(account models.Account, order models.
 
 func(s *InvestmentService) IsOpenMarket()(err error){
 	openTime:=6
-	closeTime:=22
+	closeTime:=15
 	hours, _,_:=time.Now().Clock()
 
 	if hours<openTime || hours > closeTime{
@@ -187,17 +189,29 @@ func(s *InvestmentService) GetAccountDetails(id int64)(account models.Account, e
 	}
 
 	account.Issuers=accountIssuers
-	account.ID=0
 
 	return
 }
 
 func(s *InvestmentService) BuyShares(order models.Order)(err error){
 
+	if err = s.DB.Connect(); err != nil {
+		return
+	}
+	defer s.DB.Disconnect()
+
+	err=s.DB.Query(&order, "BUYSHARES", nil)
+
 	return
 }
 
 func(s *InvestmentService) SellShares(order models.Order)(err error){
+	if err = s.DB.Connect(); err != nil {
+		return
+	}
+	defer s.DB.Disconnect()
+
+	err=s.DB.Query(&order, "SELLSHARES", nil)
 
 	return
 }

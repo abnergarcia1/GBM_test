@@ -38,10 +38,13 @@ func(m *MemDB) Query (model interface{}, query string, args ...interface{}) (err
 		m.mux.Lock()
 		for _, elem:=range m.ordersTable{
 			if elem.AccountID == args[0].(int64){
+				elem.Operation=""
+				elem.TimeStamp=0
 				*parseOrders = append(*parseOrders, elem)
 			}
 		}
 		m.mux.Unlock()
+
 
 	case "SELECT Id, Cash FROM accounts WHERE Id=?":
 		parseModel := model.(*models.Account)
@@ -55,7 +58,6 @@ func(m *MemDB) Query (model interface{}, query string, args ...interface{}) (err
 			}
 		}
 		m.mux.Unlock()
-		return
 
 	case "UPDATE accounts SET Cash=Cash - ? WHERE Id = ?":
 		cash:=args[0].(int64)
@@ -70,7 +72,6 @@ func(m *MemDB) Query (model interface{}, query string, args ...interface{}) (err
 			}
 		}
 		m.mux.Unlock()
-		return
 
 	case "UPDATE accounts SET Cash=Cash + ? WHERE Id = ?":
 		cash:=args[0].(int64)
@@ -85,11 +86,42 @@ func(m *MemDB) Query (model interface{}, query string, args ...interface{}) (err
 			}
 		}
 		m.mux.Unlock()
-		return
+
+	case "BUYSHARES":
+		parseBuyOrder := model.(*models.Order)
+
+		for i, order := range m.ordersTable{
+
+			if parseBuyOrder.AccountID==order.AccountID && parseBuyOrder.IssuerName==order.IssuerName{
+
+				m.mux.Lock()
+				m.ordersTable[i].TotalShares+=parseBuyOrder.TotalShares
+				m.mux.Unlock()
+				return
+			}
+		}
+
+		m.ordersTable = append(m.ordersTable, *parseBuyOrder)
+
+	case "SELLSHARES":
+		parseSellOrder := model.(*models.Order)
+
+		for i, order := range m.ordersTable{
+
+			if parseSellOrder.AccountID==order.AccountID && parseSellOrder.IssuerName==order.IssuerName{
+
+				m.mux.Lock()
+				m.ordersTable[i].TotalShares-=parseSellOrder.TotalShares
+				if m.ordersTable[i].TotalShares<=0{
+					m.ordersTable = append(m.ordersTable[:i],m.ordersTable[i+1:]...)
+				}
+				m.mux.Unlock()
+				return
+			}
+		}
+
 	}
 
-	fmt.Println("accounts table: ",m.accountsTable)
-	fmt.Println("orders table: ", m.ordersTable)
 	return
 }
 
